@@ -4,7 +4,7 @@ const supabaseUrl = 'https://wkpuynvqamboltufiokp.supabase.co';
 const supabaseKey = 'VOTRE_CLE_API_ANON_ICI'; 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-const express = require('express');
+consexpress = require('express');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
@@ -25,7 +25,9 @@ app.use('/telecharger', express.static(uploadDir));
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         cb(null, uploadDir);
-    },
+    },nano index.js
+
+
     filename: (req, file, cb) => {
         cb(null, file.originalname);
     }
@@ -121,4 +123,4 @@ app.get('/', (req, res) => {
 app.listen(PORT, () => {
     console.log(`Serveur JOSKUL CLOUD avec visualisation actif sur http://localhost:${PORT}`);
 });
-x
+

@@ -9,9 +9,9 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
-const app = expresconst PORT = 3000;
+const app = express();
 const PORT = process.env.PORT || 3000;
-const PORT = process.env.PORT || 3000;o
+
 app.use(express.urlencoded({ extended: true }));
 
 const uploadDir = path.join(__dirname, 'uploads');

@@ -4,7 +4,7 @@ const supabaseUrl = 'https://wkpuynvqamboltufiokp.supabase.co';
 const supabaseKey = 'VOTRE_CLE_API_ANON_ICI'; 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-consexpress = require('express');
+const express = require('express');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
@@ -25,8 +25,7 @@ app.use('/telecharger', express.static(uploadDir));
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         cb(null, uploadDir);
-    },nano index.js
-
+    },
 
     filename: (req, file, cb) => {
         cb(null, file.originalname);
@@ -105,7 +104,7 @@ app.get('/dashboard', (req, res) => {
             <br><br>
             <a href="/login" style="color: red; text-decoration: none;">Se déconnecter</a>
         </div>
-    `);
+    `);-
 });
 
 // 4. Traitement de la réception de fichier
@@ -124,3 +123,25 @@ app.listen(PORT, () => {
     console.log(`Serveur JOSKUL CLOUD avec visualisation actif sur http://localhost:${PORT}`);
 });
 
+
+// Route pour supprimer un fichier de Supabase
+app.post("/delete", async (req, res) => {
+  const fileName = req.body.fileName;
+  if (!fileName) return res.status(400).send("Erreur : Aucun nom de fichier.");
+
+  try {
+    const { data, error } = await supabase.storage
+      .from("José Kulondi")
+      .remove([fileName]);
+
+    if (error) {
+      console.error(error);
+      return res.status(500).send("Erreur suppression : " + error.message);
+    }
+
+    res.redirect("/dashboard?deleted=true");
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Erreur serveur lors de la suppression.");
+  }
+});

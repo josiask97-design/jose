@@ -1,7 +1,7 @@
 const { createClient } = require('@supabase/supabase-js');
 
 const supabaseUrl = 'https://wkpuynvqamboltufiokp.supabase.co';
-const supabaseKey = 'VOTRE_CLE_API_ANON_ICI'; 
+const supabaseKey = "sb_publishable_UQr_4YrSrBCvqpSejzIbkw_zCYBHHl2"
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 const express = require('express');

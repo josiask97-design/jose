@@ -16,7 +16,6 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 app.use(express.json());
 
-// Interface Web Complète (Chat, Vocaux, Photos, Auth)
 app.get('/', (req, res) => {
   res.send(`
     <!DOCTYPE html>
@@ -31,7 +30,7 @@ app.get('/', (req, res) => {
         * { box-sizing: border-box; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #121212; color: white; margin: 0; padding: 0; display: flex; height: 100vh; }
         
-        /* Sidebar (Conversations) */
+        /* Sidebar */
         #sidebar { width: 30%; background: #1e1e1e; border-right: 1px solid #333; display: flex; flex-direction: column; }
         #user-profile { padding: 15px; border-bottom: 1px solid #333; background: #252525; display: flex; justify-content: space-between; align-items: center; }
         #conv-list { flex: 1; overflow-y: auto; }
@@ -58,20 +57,43 @@ app.get('/', (req, res) => {
 
         /* Auth Screen */
         #auth-screen { position: fixed; inset: 0; background: #121212; display: flex; justify-content: center; align-items: center; z-index: 100; }
-        .auth-box { background: #1e1e1e; padding: 30px; border-radius: 10px; width: 320px; display: flex; flex-direction: column; gap: 15px; }
-        .auth-box input { padding: 10px; border-radius: 5px; border: 1px solid #333; background: #2a2a2a; color: white; }
+        .auth-box { background: #1e1e1e; padding: 30px; border-radius: 12px; width: 340px; display: flex; flex-direction: column; gap: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        .phone-group { display: flex; gap: 8px; }
+        select { padding: 10px; border-radius: 6px; border: 1px solid #333; background: #2a2a2a; color: white; outline: none; }
+        .auth-box input { padding: 10px; border-radius: 6px; border: 1px solid #333; background: #2a2a2a; color: white; outline: none; }
       </style>
     </head>
     <body>
 
-      <!-- ÉCRAN DE CONNEXION / INSCRIPTION -->
+      <!-- ÉCRAN DE CONNEXION / INSCRIPTION AVEC NUMÉRO -->
       <div id="auth-screen">
         <div class="auth-box">
-          <h2>🔐 JOSKUL CHAT</h2>
-          <input type="email" id="email" placeholder="Email" />
+          <h2>📱 JOSKUL MESSENGER</h2>
+          <p style="font-size: 12px; opacity: 0.7; margin-top: -10px;">Entrez votre numéro de téléphone pour vous connecter</p>
+          
+          <input type="text" id="pseudo" placeholder="Votre Pseudo / Nom" />
+
+          <div class="phone-group">
+            <select id="country-code">
+              <option value="+243">🇨🇩 +243 (RDC)</option>
+              <option value="+33">🇫🇷 +33 (France)</option>
+              <option value="+225">🇨🇮 +225 (Côte d'Ivoire)</option>
+              <option value="+221">🇸🇳 +221 (Sénégal)</option>
+              <option value="+237">🇨🇲 +237 (Cameroun)</option>
+              <option value="+1">🇺🇸 +1 (USA/Canada)</option>
+              <option value="+242">🇨🇬 +242 (Congo BZ)</option>
+              <option value="+250">🇷🇼 +250 (Rwanda)</option>
+              <option value="+257">🇧🇮 +257 (Burundi)</option>
+              <option value="+212">🇲🇦 +212 (Maroc)</option>
+              <option value="+216">🇹🇳 +216 (Tunisie)</option>
+              <option value="+213">🇩🇿 +213 (Algérie)</option>
+            </select>
+            <input type="tel" id="phone-number" placeholder="812345678" style="flex: 1;" />
+          </div>
+
           <input type="password" id="password" placeholder="Mot de passe" />
-          <button onclick="login()">Se Connecter</button>
-          <button onclick="signup()" style="background:#333;">S'inscrire</button>
+
+          <button onclick="loginWithPhone()">Se Connecter / S'inscrire</button>
         </div>
       </div>
 
@@ -105,34 +127,62 @@ app.get('/', (req, res) => {
         const supabaseClient = window.supabase.createClient('${supabaseUrl}', '${supabaseKey}');
         const socket = io();
         let currentUser = null;
+        let userPseudo = "";
         let mediaRecorder;
         let audioChunks = [];
 
-        // --- AUTHENTIFICATION ---
-        async function signup() {
-          const email = document.getElementById('email').value;
-          const password = document.getElementById('password').value;
-          const { data, error } = await supabaseClient.auth.signUp({ email, password });
-          if(error) alert(error.message); else alert("Compte créé ! Vous pouvez vous connecter.");
-        }
+        // --- AUTHENTIFICATION PAR TÉLÉPHONE ---
+        async function loginWithPhone() {
+          const code = document.getElementById('country-code').value;
+          const number = document.getElementById('phone-number').value.trim();
+          const pseudo = document.getElementById('pseudo').value.trim();
+          const password = document.getElementById('password').value.trim();
 
-        async function login() {
-          const email = document.getElementById('email').value;
-          const password = document.getElementById('password').value;
-          const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
-          if(error) alert(error.message);
-          else {
-            currentUser = data.user;
-            document.getElementById('auth-screen').style.display = 'none';
-            document.getElementById('my-pseudo').innerText = currentUser.email.split('@')[0];
-            initSocket();
-            requestNotificationPermission();
+          if(!number || !password || !pseudo) {
+            return alert("Veuillez remplir le pseudo, le numéro et le mot de passe.");
           }
+
+          const fullPhone = code + number.replace(/^0+/, ''); // Format international sans le 0 au début
+          userPseudo = pseudo;
+
+          // Création d'un identifiant virtuel basé sur le numéro
+          const virtualEmail = fullPhone.replace('+', '') + '@joskul.chat';
+
+          // Tentative de connexion
+          let { data, error } = await supabaseClient.auth.signInWithPassword({
+            email: virtualEmail,
+            password: password
+          });
+
+          // Si l'utilisateur n'existe pas encore, on l'inscrit automatiquement
+          if (error) {
+            const signupRes = await supabaseClient.auth.signUp({
+              email: virtualEmail,
+              password: password,
+              options: {
+                data: { phone_number: fullPhone, pseudo: pseudo }
+              }
+            });
+
+            if (signupRes.error) {
+              alert("Erreur lors de la connexion : " + signupRes.error.message);
+              return;
+            }
+            currentUser = signupRes.data.user;
+          } else {
+            currentUser = data.user;
+          }
+
+          // Afficher la messagerie
+          document.getElementById('auth-screen').style.display = 'none';
+          document.getElementById('my-pseudo').innerText = pseudo + " (" + fullPhone + ")";
+          initSocket();
+          requestNotificationPermission();
         }
 
-        // --- SOCKET & STATUT EN LIGNE ---
+        // --- SOCKET & MESSAGES ---
         function initSocket() {
-          socket.emit('user_online', currentUser.id);
+          socket.emit('user_online', userPseudo);
 
           socket.on('receive_message', (msg) => {
             appendMessage(msg);
@@ -140,13 +190,12 @@ app.get('/', (req, res) => {
           });
         }
 
-        // --- ENVOI DE MESSAGES ---
         function sendTextMessage() {
           const input = document.getElementById('msg-input');
           if(!input.value.trim()) return;
 
           const msg = {
-            sender: currentUser.email.split('@')[0],
+            sender: userPseudo,
             text: input.value,
             type: 'text',
             time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
@@ -159,7 +208,7 @@ app.get('/', (req, res) => {
         function appendMessage(msg) {
           const box = document.getElementById('chat-box');
           const div = document.createElement('div');
-          const isMe = msg.sender === currentUser.email.split('@')[0];
+          const isMe = msg.sender === userPseudo;
           div.className = \`msg \${isMe ? 'sent' : 'received'}\`;
 
           let content = \`<b>\${msg.sender}</b><br>\`;
@@ -185,14 +234,14 @@ app.get('/', (req, res) => {
           const { data: publicUrl } = supabaseClient.storage.from('chat-media').getPublicUrl(filePath);
 
           socket.emit('send_message', {
-            sender: currentUser.email.split('@')[0],
+            sender: userPseudo,
             type: 'photo',
             mediaUrl: publicUrl.publicUrl,
             time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
           });
         }
 
-        // --- MESSAGES VOCAUX ---
+        // --- VOCAUX ---
         async function toggleVoiceRecord() {
           const btn = document.getElementById('voice-btn');
           if (!mediaRecorder || mediaRecorder.state === "inactive") {
@@ -207,7 +256,7 @@ app.get('/', (req, res) => {
               const { data: publicUrl } = supabaseClient.storage.from('chat-media').getPublicUrl(filePath);
 
               socket.emit('send_message', {
-                sender: currentUser.email.split('@')[0],
+                sender: userPseudo,
                 type: 'audio',
                 mediaUrl: publicUrl.publicUrl,
                 time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
@@ -221,7 +270,7 @@ app.get('/', (req, res) => {
           }
         }
 
-        // --- NOTIFICATIONS ---
+        // --- NOTIFICATIONS & GROUPES ---
         function requestNotificationPermission() {
           if ("Notification" in window && Notification.permission !== "granted") {
             Notification.requestPermission();
@@ -229,7 +278,7 @@ app.get('/', (req, res) => {
         }
 
         function showNotification(msg) {
-          if (Notification.permission === "granted" && msg.sender !== currentUser.email.split('@')[0]) {
+          if (Notification.permission === "granted" && msg.sender !== userPseudo) {
             new Notification(\`Nouveau message de \${msg.sender}\`, {
               body: msg.type === 'text' ? msg.text : 'Fichier multimédia'
             });
@@ -238,21 +287,17 @@ app.get('/', (req, res) => {
 
         function createGroup() {
           const name = prompt("Nom du groupe :");
-          if(name) {
-            alert("Groupe " + name + " créé !");
-          }
+          if(name) alert("Groupe " + name + " créé !");
         }
       </script>
-
     </body>
     </html>
   `);
 });
 
-// Événements Socket.IO
 io.on('connection', (socket) => {
-  socket.on('user_online', (userId) => {
-    io.emit('user_status', { userId, status: 'online' });
+  socket.on('user_online', (pseudo) => {
+    io.emit('user_status', { pseudo, status: 'online' });
   });
 
   socket.on('send_message', (data) => {
@@ -260,4 +305,4 @@ io.on('connection', (socket) => {
   });
 });
 
-server.listen(PORT, () => console.log(`Serveur Messagerie en ligne sur le port ${PORT}`));
+server.listen(PORT, () => console.log(`Serveur Messagerie Téléphone en ligne sur le port ${PORT}`));

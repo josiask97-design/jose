@@ -22,54 +22,63 @@ app.get('/', (req, res) => {
     <html lang="fr">
     <head>
       <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
       <title>JOSKUL MESSENGER</title>
       <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
       <script src="/socket.io/socket.io.js"></script>
       <style>
-        * { box-sizing: border-box; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #121212; color: white; margin: 0; padding: 0; display: flex; height: 100vh; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body { width: 100%; height: 100%; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: #121212; color: white; overflow: hidden; }
         
-        /* Sidebar */
-        #sidebar { width: 30%; background: #1e1e1e; border-right: 1px solid #333; display: flex; flex-direction: column; }
+        /* Layout principal Responsive */
+        #app-container { display: flex; width: 100vw; height: 100vh; }
+        
+        /* Sidebar (Responsive Mobile) */
+        #sidebar { width: 100%; max-width: 350px; background: #1e1e1e; border-right: 1px solid #333; display: flex; flex-direction: column; height: 100%; }
         #user-profile { padding: 15px; border-bottom: 1px solid #333; background: #252525; display: flex; justify-content: space-between; align-items: center; }
         #conv-list { flex: 1; overflow-y: auto; }
         .conv-item { padding: 15px; border-bottom: 1px solid #2a2a2a; cursor: pointer; display: flex; flex-direction: column; }
         .conv-item:hover { background: #2a2a2a; }
         
         /* Chat Main Zone */
-        #chat-area { flex: 1; display: flex; flex-direction: column; background: #121212; }
+        #chat-area { flex: 1; display: flex; flex-direction: column; background: #121212; height: 100%; }
         #chat-header { padding: 15px; background: #1e1e1e; border-bottom: 1px solid #333; font-weight: bold; }
         #chat-box { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
         
         /* Messages */
-        .msg { max-width: 65%; padding: 10px 14px; border-radius: 12px; font-size: 14px; position: relative; word-wrap: break-word; }
+        .msg { max-width: 80%; padding: 10px 14px; border-radius: 12px; font-size: 15px; word-wrap: break-word; }
         .sent { background: #0084ff; color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
         .received { background: #2a2a2a; color: white; align-self: flex-start; border-bottom-left-radius: 2px; }
         .msg-time { font-size: 10px; opacity: 0.7; margin-top: 5px; text-align: right; display: block; }
         .status-dot { width: 10px; height: 10px; background: #4CAF50; border-radius: 50%; display: inline-block; margin-right: 5px; }
 
-        /* Controls */
-        #input-area { padding: 10px; background: #1e1e1e; display: flex; gap: 10px; align-items: center; }
-        input[type="text"] { flex: 1; padding: 12px; border-radius: 20px; border: none; background: #2a2a2a; color: white; }
-        button { padding: 10px 15px; border-radius: 20px; border: none; background: #0084ff; color: white; cursor: pointer; font-weight: bold; }
-        .btn-icon { background: #333; padding: 10px; border-radius: 50%; }
+        /* Input Controls */
+        #input-area { padding: 12px; background: #1e1e1e; display: flex; gap: 8px; align-items: center; border-top: 1px solid #2a2a2a; }
+        input[type="text"], input[type="tel"], input[type="password"] { flex: 1; padding: 12px 14px; border-radius: 20px; border: 1px solid #333; background: #2a2a2a; color: white; outline: none; font-size: 15px; }
+        button { padding: 12px 18px; border-radius: 20px; border: none; background: #0084ff; color: white; cursor: pointer; font-weight: bold; font-size: 14px; }
+        .btn-icon { background: #333; padding: 10px 12px; border-radius: 50%; border: none; cursor: pointer; font-size: 16px; }
 
-        /* Auth Screen */
-        #auth-screen { position: fixed; inset: 0; background: #121212; display: flex; justify-content: center; align-items: center; z-index: 100; }
-        .auth-box { background: #1e1e1e; padding: 30px; border-radius: 12px; width: 340px; display: flex; flex-direction: column; gap: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
-        .phone-group { display: flex; gap: 8px; }
-        select { padding: 10px; border-radius: 6px; border: 1px solid #333; background: #2a2a2a; color: white; outline: none; }
-        .auth-box input { padding: 10px; border-radius: 6px; border: 1px solid #333; background: #2a2a2a; color: white; outline: none; }
+        /* Écran d'authentification Plein Écran */
+        #auth-screen { position: fixed; inset: 0; background: #121212; display: flex; justify-content: center; align-items: center; z-index: 100; padding: 20px; }
+        .auth-box { background: #1e1e1e; padding: 25px 20px; border-radius: 16px; width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: 15px; box-shadow: 0 8px 24px rgba(0,0,0,0.6); }
+        .auth-box h2 { text-align: center; color: #0084ff; font-size: 22px; }
+        .phone-group { display: flex; gap: 8px; width: 100%; }
+        select { padding: 12px; border-radius: 10px; border: 1px solid #333; background: #2a2a2a; color: white; outline: none; font-size: 14px; }
+        .auth-box input { border-radius: 10px; width: 100%; }
+        .auth-box button { border-radius: 10px; padding: 14px; margin-top: 5px; width: 100%; }
+
+        @media (max-width: 768px) {
+          #sidebar { display: none; } /* Mode mobile : plein écran sur le chat */
+        }
       </style>
     </head>
     <body>
 
-      <!-- ÉCRAN DE CONNEXION / INSCRIPTION AVEC NUMÉRO -->
+      <!-- ÉCRAN D'AUTHENTIFICATION PLEIN ÉCRAN -->
       <div id="auth-screen">
         <div class="auth-box">
           <h2>📱 JOSKUL MESSENGER</h2>
-          <p style="font-size: 12px; opacity: 0.7; margin-top: -10px;">Entrez votre numéro de téléphone pour vous connecter</p>
+          <p style="font-size: 13px; opacity: 0.7; text-align: center; margin-bottom: 5px;">Connectez-vous avec votre numéro de téléphone</p>
           
           <input type="text" id="pseudo" placeholder="Votre Pseudo / Nom" />
 
@@ -88,7 +97,7 @@ app.get('/', (req, res) => {
               <option value="+216">🇹🇳 +216 (Tunisie)</option>
               <option value="+213">🇩🇿 +213 (Algérie)</option>
             </select>
-            <input type="tel" id="phone-number" placeholder="812345678" style="flex: 1;" />
+            <input type="tel" id="phone-number" placeholder="812345678" />
           </div>
 
           <input type="password" id="password" placeholder="Mot de passe" />
@@ -97,29 +106,31 @@ app.get('/', (req, res) => {
         </div>
       </div>
 
-      <!-- INTERFACE DE MESSAGERIE -->
-      <div id="sidebar">
-        <div id="user-profile">
-          <span id="my-pseudo">Mon Profil</span>
-          <button onclick="createGroup()" style="font-size: 11px;">+ Groupe</button>
+      <!-- INTERFACE MESSAGERIE -->
+      <div id="app-container">
+        <div id="sidebar">
+          <div id="user-profile">
+            <span id="my-pseudo">Mon Profil</span>
+            <button onclick="createGroup()" style="font-size: 11px; padding: 6px 12px;">+ Groupe</button>
+          </div>
+          <div id="conv-list">
+            <div class="conv-item">Discussion Générale</div>
+          </div>
         </div>
-        <div id="conv-list">
-          <div class="conv-item">Discussion Générale</div>
-        </div>
-      </div>
 
-      <div id="chat-area">
-        <div id="chat-header">
-          <span class="status-dot"></span> Discussion Générale
-        </div>
-        <div id="chat-box"></div>
+        <div id="chat-area">
+          <div id="chat-header">
+            <span class="status-dot"></span> Discussion Générale
+          </div>
+          <div id="chat-box"></div>
 
-        <div id="input-area">
-          <input type="file" id="file-input" style="display:none" onchange="sendFile(this)" />
-          <button class="btn-icon" onclick="document.getElementById('file-input').click()">📷</button>
-          <button class="btn-icon" id="voice-btn" onclick="toggleVoiceRecord()">🎙️</button>
-          <input type="text" id="msg-input" placeholder="Écrivez votre message..." />
-          <button onclick="sendTextMessage()">Envoyer</button>
+          <div id="input-area">
+            <input type="file" id="file-input" style="display:none" onchange="sendFile(this)" />
+            <button class="btn-icon" onclick="document.getElementById('file-input').click()">📷</button>
+            <button class="btn-icon" id="voice-btn" onclick="toggleVoiceRecord()">🎙️</button>
+            <input type="text" id="msg-input" placeholder="Écrivez un message..." />
+            <button onclick="sendTextMessage()">Envoyer</button>
+          </div>
         </div>
       </div>
 
@@ -131,7 +142,6 @@ app.get('/', (req, res) => {
         let mediaRecorder;
         let audioChunks = [];
 
-        // --- AUTHENTIFICATION PAR TÉLÉPHONE ---
         async function loginWithPhone() {
           const code = document.getElementById('country-code').value;
           const number = document.getElementById('phone-number').value.trim();
@@ -139,33 +149,27 @@ app.get('/', (req, res) => {
           const password = document.getElementById('password').value.trim();
 
           if(!number || !password || !pseudo) {
-            return alert("Veuillez remplir le pseudo, le numéro et le mot de passe.");
+            return alert("Veuillez remplir tous les champs.");
           }
 
-          const fullPhone = code + number.replace(/^0+/, ''); // Format international sans le 0 au début
+          const fullPhone = code + number.replace(/^0+/, '');
           userPseudo = pseudo;
-
-          // Création d'un identifiant virtuel basé sur le numéro
           const virtualEmail = fullPhone.replace('+', '') + '@joskul.chat';
 
-          // Tentative de connexion
           let { data, error } = await supabaseClient.auth.signInWithPassword({
             email: virtualEmail,
             password: password
           });
 
-          // Si l'utilisateur n'existe pas encore, on l'inscrit automatiquement
           if (error) {
             const signupRes = await supabaseClient.auth.signUp({
               email: virtualEmail,
               password: password,
-              options: {
-                data: { phone_number: fullPhone, pseudo: pseudo }
-              }
+              options: { data: { phone_number: fullPhone, pseudo: pseudo } }
             });
 
             if (signupRes.error) {
-              alert("Erreur lors de la connexion : " + signupRes.error.message);
+              alert("Erreur de connexion : " + signupRes.error.message);
               return;
             }
             currentUser = signupRes.data.user;
@@ -173,17 +177,14 @@ app.get('/', (req, res) => {
             currentUser = data.user;
           }
 
-          // Afficher la messagerie
           document.getElementById('auth-screen').style.display = 'none';
-          document.getElementById('my-pseudo').innerText = pseudo + " (" + fullPhone + ")";
+          document.getElementById('my-pseudo').innerText = pseudo;
           initSocket();
           requestNotificationPermission();
         }
 
-        // --- SOCKET & MESSAGES ---
         function initSocket() {
           socket.emit('user_online', userPseudo);
-
           socket.on('receive_message', (msg) => {
             appendMessage(msg);
             showNotification(msg);
@@ -222,7 +223,6 @@ app.get('/', (req, res) => {
           box.scrollTop = box.scrollHeight;
         }
 
-        // --- ENVOI PHOTO ---
         async function sendFile(input) {
           const file = input.files[0];
           if(!file) return;
@@ -241,7 +241,6 @@ app.get('/', (req, res) => {
           });
         }
 
-        // --- VOCAUX ---
         async function toggleVoiceRecord() {
           const btn = document.getElementById('voice-btn');
           if (!mediaRecorder || mediaRecorder.state === "inactive") {
@@ -270,7 +269,6 @@ app.get('/', (req, res) => {
           }
         }
 
-        // --- NOTIFICATIONS & GROUPES ---
         function requestNotificationPermission() {
           if ("Notification" in window && Notification.permission !== "granted") {
             Notification.requestPermission();
@@ -305,4 +303,5 @@ io.on('connection', (socket) => {
   });
 });
 
-server.listen(PORT, () => console.log(`Serveur Messagerie Téléphone en ligne sur le port ${PORT}`));
+server.listen(PORT, () => console.log(`Serveur Messagerie Fullscreen sur le port ${PORT}`));
+

@@ -1,180 +1,144 @@
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
-const { createClient } = require('@supabase/supabase-js');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: "*" } });
+const io = new Server(server, {
+  cors: { origin: "*" }
+});
 
 const PORT = process.env.PORT || 3000;
 
-const supabaseUrl = "https://wkpuynvqamboltufiokp.supabase.co";
-const supabaseKey = "sb_publishable_UQr_4YrSrBCvqpSejzIbkw_zCYBHHl2";
-const supabase = createClient(supabaseUrl, supabaseKey);
-
-app.use(express.json());
-
 app.get('/', (req, res) => {
   res.send(`
-    <!DOCTYPE html>
-    <html lang="fr">
-    <head>
-      <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-      <title>JOSKUL MESSENGER</title>
-      <script src="/socket.io/socket.io.js"></script>
-      <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        html, body { width: 100vw; height: 100vh; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #121212; color: white; overflow: hidden; }
-        
-        #app-container { display: flex; width: 100vw; height: 100vh; }
-        
-        #sidebar { width: 100%; max-width: 320px; background: #1e1e1e; border-right: 1px solid #333; display: flex; flex-direction: column; height: 100%; }
-        #user-profile { padding: 15px; border-bottom: 1px solid #333; background: #252525; display: flex; justify-content: space-between; align-items: center; }
-        #conv-list { flex: 1; overflow-y: auto; }
-        .conv-item { padding: 15px; border-bottom: 1px solid #2a2a2a; cursor: pointer; }
-        
-        #chat-area { flex: 1; display: flex; flex-direction: column; background: #121212; height: 100%; }
-        #chat-header { padding: 15px; background: #1e1e1e; border-bottom: 1px solid #333; font-weight: bold; display: flex; align-items: center; gap: 8px; }
-        #chat-box { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
-        
-        .msg { max-width: 80%; padding: 10px 14px; border-radius: 12px; font-size: 15px; word-wrap: break-word; }
-        .sent { background: #0084ff; color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
-        .received { background: #2a2a2a; color: white; align-self: flex-start; border-bottom-left-radius: 2px; }
-        .msg-time { font-size: 10px; opacity: 0.7; margin-top: 4px; text-align: right; display: block; }
-        .status-dot { width: 10px; height: 10px; background: #4CAF50; border-radius: 50%; display: inline-block; }
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JOSKUL MESSENGER</title>
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #0b141a; color: #e9edef; height: 100vh; display: flex; justify-content: center; align-items: center; }
+    #auth-container { background-color: #111b21; padding: 30px; border-radius: 12px; width: 90%; max-width: 400px; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
+    #auth-container h2 { color: #00a884; margin-bottom: 10px; font-size: 24px; }
+    #auth-container p { color: #8696a0; font-size: 14px; margin-bottom: 20px; }
+    .input-group { margin-bottom: 15px; text-align: left; }
+    .input-group label { display: block; font-size: 12px; color: #8696a0; margin-bottom: 5px; }
+    input { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #222d34; background-color: #202c33; color: #e9edef; font-size: 15px; outline: none; }
+    input:focus { border-color: #00a884; }
+    .phone-row { display: flex; gap: 8px; }
+    .phone-row input:first-child { width: 30%; }
+    .phone-row input:last-child { width: 70%; }
+    button { width: 100%; padding: 12px; border: none; border-radius: 8px; background-color: #00a884; color: #111b21; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+    button:hover { background-color: #029071; }
+    #chat-container { display: none; width: 100%; height: 100vh; flex-direction: column; background-color: #0b141a; }
+    #chat-header { background-color: #202c33; padding: 15px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #222d34; }
+    #chat-header h3 { color: #e9edef; font-size: 18px; }
+    #messages { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+    .message { max-width: 75%; padding: 8px 12px; border-radius: 8px; font-size: 14px; word-wrap: break-word; }
+    .message.mine { background-color: #005c4b; align-self: flex-end; color: #e9edef; }
+    .message.other { background-color: #202c33; align-self: flex-start; color: #e9edef; }
+    .message .sender { font-size: 11px; color: #8696a0; margin-bottom: 2px; font-weight: bold; }
+    #input-area { background-color: #202c33; padding: 10px; display: flex; gap: 10px; align-items: center; }
+    #input-area input { flex: 1; }
+    #input-area button { width: auto; padding: 12px 20px; margin-top: 0; }
+  </style>
+</head>
+<body>
 
-        #input-area { padding: 12px; background: #1e1e1e; display: flex; gap: 8px; align-items: center; border-top: 1px solid #2a2a2a; }
-        input[type="text"], input[type="tel"], input[type="password"] { flex: 1; padding: 12px 14px; border-radius: 20px; border: 1px solid #333; background: #2a2a2a; color: white; outline: none; font-size: 15px; }
-        button { padding: 12px 18px; border-radius: 20px; border: none; background: #0084ff; color: white; cursor: pointer; font-weight: bold; font-size: 14px; }
-        
-        #auth-screen { position: fixed; inset: 0; background: #121212; display: flex; justify-content: center; align-items: center; z-index: 100; padding: 20px; }
-        .auth-box { background: #1e1e1e; padding: 25px 20px; border-radius: 16px; width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.6); }
-        .auth-box h2 { text-align: center; color: #0084ff; font-size: 22px; }
-        .phone-group { display: flex; gap: 8px; width: 100%; }
-        select { padding: 12px; border-radius: 10px; border: 1px solid #333; background: #2a2a2a; color: white; outline: none; font-size: 14px; }
-        .auth-box input { border-radius: 10px; width: 100%; }
-        .auth-box button { border-radius: 10px; padding: 14px; width: 100%; margin-top: 5px; }
+  <div id="auth-container">
+    <h2>📱 JOSKUL MESSENGER</h2>
+    <p>Accès direct au chat</p>
 
-        @media (max-width: 768px) {
-          #sidebar { display: none; }
-        }
-      </style>
-    </head>
-    <body>
+    <div class="input-group">
+      <label>Pseudo / Nom</label>
+      <input type="text" id="username" placeholder="Ex: José" required>
+    </div>
 
-      <div id="auth-screen">
-        <div class="auth-box">
-          <h2>📱 JOSKUL MESSENGER</h2>
-          <p style="font-size: 13px; opacity: 0.7; text-align: center; margin-bottom: 5px;">Connexion directe</p>
-          
-          <input type="text" id="pseudo" placeholder="Votre Pseudo / Nom" />
-
-          <div class="phone-group">
-            <select id="country-code">
-              <option value="+243">🇨🇩 +243 (RDC)</option>
-              <option value="+33">🇫🇷 +33 (France)</option>
-              <option value="+225">🇨🇮 +225 (Côte d'Ivoire)</option>
-              <option value="+221">🇸🇳 +221 (Sénégal)</option>
-              <option value="+237">🇨🇲 +237 (Cameroun)</option>
-              <option value="+1">🇺🇸 +1 (USA/Canada)</option>
-            </select>
-            <input type="tel" id="phone-number" placeholder="812345678" />
-          </div>
-
-          <input type="password" id="password" placeholder="Mot de passe" />
-
-          <button onclick="loginUser()">Entrer dans le Chat</button>
-        </div>
+    <div class="input-group">
+      <label>Numéro de téléphone</label>
+      <div class="phone-row">
+        <input type="text" id="code" value="+243">
+        <input type="tel" id="phone" placeholder="810000000" required>
       </div>
+    </div>
 
-      <div id="app-container">
-        <div id="sidebar">
-          <div id="user-profile">
-            <span id="my-pseudo">Mon Profil</span>
-          </div>
-          <div id="conv-list">
-            <div class="conv-item">Discussion Générale</div>
-          </div>
-        </div>
+    <button onclick="joinChat()">ENTRER DANS LE CHAT</button>
+  </div>
 
-        <div id="chat-area">
-          <div id="chat-header">
-            <span class="status-dot"></span> Discussion Générale
-          </div>
-          <div id="chat-box"></div>
+  <div id="chat-container">
+    <div id="chat-header">
+      <h3 id="user-display">JOSKUL MESSENGER</h3>
+    </div>
+    <div id="messages"></div>
+    <div id="input-area">
+      <input type="text" id="msgInput" placeholder="Écrivez un message..." onkeypress="handleKey(event)">
+      <button onclick="sendMsg()">Envoyer</button>
+    </div>
+  </div>
 
-          <div id="input-area">
-            <input type="text" id="msg-input" placeholder="Écrivez un message..." />
-            <button onclick="sendTextMessage()">Envoyer</button>
-          </div>
-        </div>
-      </div>
+  <script>
+    const socket = io();
+    let currentUser = "";
 
-      <script>
-        const socket = io();
-        let userPseudo = "";
+    function joinChat() {
+      const name = document.getElementById('username').value.trim();
+      const code = document.getElementById('code').value.trim();
+      const phone = document.getElementById('phone').value.trim();
 
-        function loginUser() {
-          const code = document.getElementById('country-code').value;
-          const number = document.getElementById('phone-number').value.trim();
-          const pseudo = document.getElementById('pseudo').value.trim();
-          const password = document.getElementById('password').value.trim();
+      if (!name || !phone) {
+        alert("Veuillez remplir votre nom et numéro");
+        return;
+      }
 
-          if(!number || !password || !pseudo) {
-            return alert("Veuillez remplir tous les champs.");
-          }
+      currentUser = name;
+      document.getElementById('user-display').innerText = "💬 Connecté en tant que " + name + " (" + code + phone + ")";
+      document.getElementById('auth-container').style.display = 'none';
+      document.getElementById('chat-container').style.display = 'flex';
+    }
 
-          userPseudo = pseudo + " (" + code + number + ")";
-          document.getElementById('auth-screen').style.display = 'none';
-          document.getElementById('my-pseudo').innerText = pseudo;
-          
-          initSocket();
-        }
+    function sendMsg() {
+      const input = document.getElementById('msgInput');
+      const text = input.value.trim();
+      if (!text) return;
 
-        function initSocket() {
-          socket.emit('user_online', userPseudo);
-          socket.on('receive_message', (msg) => {
-            appendMessage(msg);
-          });
-        }
+      socket.emit('chatMessage', { sender: currentUser, text: text });
+      input.value = '';
+    }
 
-        function sendTextMessage() {
-          const input = document.getElementById('msg-input');
-          if(!input.value.trim()) return;
+    function handleKey(e) {
+      if (e.key === 'Enter') sendMsg();
+    }
 
-          const msg = {
-            sender: userPseudo,
-            text: input.value,
-            time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
-          };
+    socket.on('chatMessage', (data) => {
+      const box = document.getElementById('messages');
+      const msgDiv = document.createElement('div');
+      msgDiv.classList.add('message');
+      
+      if (data.sender === currentUser) {
+        msgDiv.classList.add('mine');
+        msgDiv.innerHTML = data.text;
+      } else {
+        msgDiv.classList.add('other');
+        msgDiv.innerHTML = '<div class="sender">' + data.sender + '</div>' + data.text;
+      }
 
-          socket.emit('send_message', msg);
-          input.value = '';
-        }
-
-        function appendMessage(msg) {
-          const box = document.getElementById('chat-box');
-          const div = document.createElement('div');
-          const isMe = msg.sender === userPseudo;
-          div.className = `msg ${isMe ? 'sent' : 'received'}`;
-
-          div.innerHTML = `<b>${msg.sender}</b><br>${msg.text}<span class="msg-time">${msg.time}</span>`;
-          box.appendChild(div);
-          box.scrollTop = box.scrollHeight;
-        }
-      </script>
-    </body>
-    </html>
+      box.appendChild(msgDiv);
+      box.scrollTop = box.scrollHeight;
+    });
+  </script>
+</body>
+</html>
   `);
 });
 
 io.on('connection', (socket) => {
-  socket.on('send_message', (data) => {
-    io.emit('receive_message', data);
+  socket.on('chatMessage', (data) => {
+    io.emit('chatMessage', data);
   });
 });
 
 server.listen(PORT, () => console.log(`Serveur prêt sur le port ${PORT}`));
-// reset cache

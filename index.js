@@ -1,147 +1,263 @@
+const express = require('express');
+const http = require('http');
+const { Server } = require('socket.io');
 const { createClient } = require('@supabase/supabase-js');
 
-const supabaseUrl = 'https://wkpuynvqamboltufiokp.supabase.co';
-const supabaseKey = "sb_publishable_UQr_4YrSrBCvqpSejzIbkw_zCYBHHl2"
-const supabase = createClient(supabaseUrl, supabaseKey);
-
-const express = require('express');
-const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
-
 const app = express();
+const server = http.createServer(app);
+const io = new Server(server, { cors: { origin: "*" } });
+
 const PORT = process.env.PORT || 3000;
 
-app.use(express.urlencoded({ extended: true }));
+// Config Supabase
+const supabaseUrl = "https://wkpuynvqamboltufiokp.supabase.co";
+const supabaseKey = "sb_publishable_UQr_4YrSrBCvqpSejzIbkw_zCYBHHl2";
+const supabase = createClient(supabaseUrl, supabaseKey);
 
-const uploadDir = path.join(__dirname, 'uploads');
-if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir);
-}
+app.use(express.json());
 
-// 🟢 ÉTAPE CLÉ : Rendre le dossier des fichiers téléchargeables publiquement
-app.use('/telecharger', express.static(uploadDir));
-
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, uploadDir);
-    },
-
-    filename: (req, file, cb) => {
-        cb(null, file.originalname);
-    }
-});
-const upload = multer({ storage: storage });
-
-const USERNAME_ADMIN = "admin";
-const PASSWORD_ADMIN = "joskul2026";
-
-// 1. Page de Connexion (Login)
-app.get('/login', (req, res) => {
-    res.send(`
-        <div style="max-width: 300px; margin: 100px auto; padding: 20px; border: 1px solid #ccc; border-radius: 8px; font-family: sans-serif; text-align: center;">
-            <h2>JOSKUL CLOUD</h2>
-            <p>Veuillez vous connecter</p>
-            <form action="/login" method="POST">
-                <input type="text" name="username" placeholder="Identifiant" required style="width: 100%; padding: 8px; margin: 10px 0; box-sizing: border-box;"><br>
-                <input type="password" name="password" placeholder="Mot de passe" required style="width: 100%; padding: 8px; margin: 10px 0; box-sizing: border-box;"><br>
-                <button type="submit" style="width: 100%; padding: 10px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">Se connecter</button>
-            </form>
-        </div>
-    `);
-});
-
-// 2. Traitement de la connexion
-app.post('/login', (req, res) => {
-    const { username, password } = req.body;
-    if (username === USERNAME_ADMIN && password === PASSWORD_ADMIN) {
-        res.redirect('/dashboard');
-    } else {
-        res.send(`
-            <div style="text-align: center; margin-top: 50px; font-family: sans-serif;">
-                <h3 style="color: red;">Identifiant ou mot de passe incorrect !</h3>
-                <a href="/login">Réessayer</a>
-            </div>
-        `);
-    }
-});
-
-// 3. Page d'accueil sécurisée (Dashboard)
-app.get('/dashboard', (req, res) => {
-    const files = fs.readdirSync(uploadDir);
-    
-    let fileListHTML = "<ul>";
-    if (files.length === 0) {
-        fileListHTML += "<li>Aucun fichier stocké pour le moment.</li>";
-    } else {
-        files.forEach(file => {
-            // 🟢 ÉTAPE CLÉ : On crée un lien vers /telecharger/nom_du_fichier
-            fileListHTML += `
-                <li style="margin: 12px 0; font-size: 16px;">
-                    📁 <a href="/telecharger/${encodeURIComponent(file)}" target="_blank" style="color: #007bff; text-decoration: none; font-weight: bold;">${file}</a>
-                </li>`;
-        });
-    }
-    fileListHTML += "</ul>";
-
-    res.send(`
-        <div style="font-family: sans-serif; padding: 20px; max-width: 600px; margin: 0 auto;">
-            <h1 style="color: #007bff;">☁️ Mon Espace JOSKUL CLOUD</h1>
-            <p>Bienvenue dans votre stockage personnel.</p>
-            <hr>
-            
-            <h3>📤 Envoyer un nouveau fichier</h3>
-            <form action="/upload" method="POST" enctype="multipart/form-data" style="background: #f4f4f4; padding: 15px; border-radius: 5px;">
-                <input type="file" name="cloudFile" required style="margin-bottom: 10px;"><br>
-                <button type="submit" style="padding: 8px 15px; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;">Sauvegarder sur le Cloud</button>
-            </form>
-
-            <hr style="margin-top: 20px;">
-            <h3>📂 Vos Fichiers Stockés :</h3>
-            <p style="font-size: 13px; color: #666;"><i>(Cliquez sur un fichier pour l'ouvrir ou le télécharger)</i></p>
-            ${fileListHTML}
-
-            <br><br>
-            <a href="/login" style="color: red; text-decoration: none;">Se déconnecter</a>
-        </div>
-    `);-
-});
-
-// 4. Traitement de la réception de fichier
-app.post('/upload', upload.single('cloudFile'), (req, res) => {
-    if (!req.file) {
-        return res.send("Erreur : Aucun fichier reçu.");
-    }
-    res.redirect('/dashboard');
-});
-
+// Interface Web Complète (Chat, Vocaux, Photos, Auth)
 app.get('/', (req, res) => {
-    res.redirect('/login');
+  res.send(`
+    <!DOCTYPE html>
+    <html lang="fr">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>JOSKUL MESSENGER</title>
+      <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+      <script src="/socket.io/socket.io.js"></script>
+      <style>
+        * { box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #121212; color: white; margin: 0; padding: 0; display: flex; height: 100vh; }
+        
+        /* Sidebar (Conversations) */
+        #sidebar { width: 30%; background: #1e1e1e; border-right: 1px solid #333; display: flex; flex-direction: column; }
+        #user-profile { padding: 15px; border-bottom: 1px solid #333; background: #252525; display: flex; justify-content: space-between; align-items: center; }
+        #conv-list { flex: 1; overflow-y: auto; }
+        .conv-item { padding: 15px; border-bottom: 1px solid #2a2a2a; cursor: pointer; display: flex; flex-direction: column; }
+        .conv-item:hover { background: #2a2a2a; }
+        
+        /* Chat Main Zone */
+        #chat-area { flex: 1; display: flex; flex-direction: column; background: #121212; }
+        #chat-header { padding: 15px; background: #1e1e1e; border-bottom: 1px solid #333; font-weight: bold; }
+        #chat-box { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+        
+        /* Messages */
+        .msg { max-width: 65%; padding: 10px 14px; border-radius: 12px; font-size: 14px; position: relative; word-wrap: break-word; }
+        .sent { background: #0084ff; color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
+        .received { background: #2a2a2a; color: white; align-self: flex-start; border-bottom-left-radius: 2px; }
+        .msg-time { font-size: 10px; opacity: 0.7; margin-top: 5px; text-align: right; display: block; }
+        .status-dot { width: 10px; height: 10px; background: #4CAF50; border-radius: 50%; display: inline-block; margin-right: 5px; }
+
+        /* Controls */
+        #input-area { padding: 10px; background: #1e1e1e; display: flex; gap: 10px; align-items: center; }
+        input[type="text"] { flex: 1; padding: 12px; border-radius: 20px; border: none; background: #2a2a2a; color: white; }
+        button { padding: 10px 15px; border-radius: 20px; border: none; background: #0084ff; color: white; cursor: pointer; font-weight: bold; }
+        .btn-icon { background: #333; padding: 10px; border-radius: 50%; }
+
+        /* Auth Screen */
+        #auth-screen { position: fixed; inset: 0; background: #121212; display: flex; justify-content: center; align-items: center; z-index: 100; }
+        .auth-box { background: #1e1e1e; padding: 30px; border-radius: 10px; width: 320px; display: flex; flex-direction: column; gap: 15px; }
+        .auth-box input { padding: 10px; border-radius: 5px; border: 1px solid #333; background: #2a2a2a; color: white; }
+      </style>
+    </head>
+    <body>
+
+      <!-- ÉCRAN DE CONNEXION / INSCRIPTION -->
+      <div id="auth-screen">
+        <div class="auth-box">
+          <h2>🔐 JOSKUL CHAT</h2>
+          <input type="email" id="email" placeholder="Email" />
+          <input type="password" id="password" placeholder="Mot de passe" />
+          <button onclick="login()">Se Connecter</button>
+          <button onclick="signup()" style="background:#333;">S'inscrire</button>
+        </div>
+      </div>
+
+      <!-- INTERFACE DE MESSAGERIE -->
+      <div id="sidebar">
+        <div id="user-profile">
+          <span id="my-pseudo">Mon Profil</span>
+          <button onclick="createGroup()" style="font-size: 11px;">+ Groupe</button>
+        </div>
+        <div id="conv-list">
+          <div class="conv-item">Discussion Générale</div>
+        </div>
+      </div>
+
+      <div id="chat-area">
+        <div id="chat-header">
+          <span class="status-dot"></span> Discussion Générale
+        </div>
+        <div id="chat-box"></div>
+
+        <div id="input-area">
+          <input type="file" id="file-input" style="display:none" onchange="sendFile(this)" />
+          <button class="btn-icon" onclick="document.getElementById('file-input').click()">📷</button>
+          <button class="btn-icon" id="voice-btn" onclick="toggleVoiceRecord()">🎙️</button>
+          <input type="text" id="msg-input" placeholder="Écrivez votre message..." />
+          <button onclick="sendTextMessage()">Envoyer</button>
+        </div>
+      </div>
+
+      <script>
+        const supabaseClient = window.supabase.createClient('${supabaseUrl}', '${supabaseKey}');
+        const socket = io();
+        let currentUser = null;
+        let mediaRecorder;
+        let audioChunks = [];
+
+        // --- AUTHENTIFICATION ---
+        async function signup() {
+          const email = document.getElementById('email').value;
+          const password = document.getElementById('password').value;
+          const { data, error } = await supabaseClient.auth.signUp({ email, password });
+          if(error) alert(error.message); else alert("Compte créé ! Vous pouvez vous connecter.");
+        }
+
+        async function login() {
+          const email = document.getElementById('email').value;
+          const password = document.getElementById('password').value;
+          const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+          if(error) alert(error.message);
+          else {
+            currentUser = data.user;
+            document.getElementById('auth-screen').style.display = 'none';
+            document.getElementById('my-pseudo').innerText = currentUser.email.split('@')[0];
+            initSocket();
+            requestNotificationPermission();
+          }
+        }
+
+        // --- SOCKET & STATUT EN LIGNE ---
+        function initSocket() {
+          socket.emit('user_online', currentUser.id);
+
+          socket.on('receive_message', (msg) => {
+            appendMessage(msg);
+            showNotification(msg);
+          });
+        }
+
+        // --- ENVOI DE MESSAGES ---
+        function sendTextMessage() {
+          const input = document.getElementById('msg-input');
+          if(!input.value.trim()) return;
+
+          const msg = {
+            sender: currentUser.email.split('@')[0],
+            text: input.value,
+            type: 'text',
+            time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+          };
+
+          socket.emit('send_message', msg);
+          input.value = '';
+        }
+
+        function appendMessage(msg) {
+          const box = document.getElementById('chat-box');
+          const div = document.createElement('div');
+          const isMe = msg.sender === currentUser.email.split('@')[0];
+          div.className = \`msg \${isMe ? 'sent' : 'received'}\`;
+
+          let content = \`<b>\${msg.sender}</b><br>\`;
+          if(msg.type === 'text') content += msg.text;
+          else if(msg.type === 'photo') content += \`<img src="\${msg.mediaUrl}" width="100%" style="border-radius:8px; margin-top:5px;" />\`;
+          else if(msg.type === 'audio') content += \`<audio controls src="\${msg.mediaUrl}"></audio>\`;
+
+          content += \`<span class="msg-time">\${msg.time}</span>\`;
+          div.innerHTML = content;
+          box.appendChild(div);
+          box.scrollTop = box.scrollHeight;
+        }
+
+        // --- ENVOI PHOTO ---
+        async function sendFile(input) {
+          const file = input.files[0];
+          if(!file) return;
+          const filePath = \`chat/\${Date.now()}_\${file.name}\`;
+
+          let { data, error } = await supabaseClient.storage.from('chat-media').upload(filePath, file);
+          if(error) return alert("Erreur upload photo");
+
+          const { data: publicUrl } = supabaseClient.storage.from('chat-media').getPublicUrl(filePath);
+
+          socket.emit('send_message', {
+            sender: currentUser.email.split('@')[0],
+            type: 'photo',
+            mediaUrl: publicUrl.publicUrl,
+            time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+          });
+        }
+
+        // --- MESSAGES VOCAUX ---
+        async function toggleVoiceRecord() {
+          const btn = document.getElementById('voice-btn');
+          if (!mediaRecorder || mediaRecorder.state === "inactive") {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorder = new MediaRecorder(stream);
+            audioChunks = [];
+            mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+            mediaRecorder.onstop = async () => {
+              const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+              const filePath = \`voice/\${Date.now()}.webm\`;
+              await supabaseClient.storage.from('chat-media').upload(filePath, audioBlob);
+              const { data: publicUrl } = supabaseClient.storage.from('chat-media').getPublicUrl(filePath);
+
+              socket.emit('send_message', {
+                sender: currentUser.email.split('@')[0],
+                type: 'audio',
+                mediaUrl: publicUrl.publicUrl,
+                time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+              });
+            };
+            mediaRecorder.start();
+            btn.style.background = "red";
+          } else {
+            mediaRecorder.stop();
+            btn.style.background = "#333";
+          }
+        }
+
+        // --- NOTIFICATIONS ---
+        function requestNotificationPermission() {
+          if ("Notification" in window && Notification.permission !== "granted") {
+            Notification.requestPermission();
+          }
+        }
+
+        function showNotification(msg) {
+          if (Notification.permission === "granted" && msg.sender !== currentUser.email.split('@')[0]) {
+            new Notification(\`Nouveau message de \${msg.sender}\`, {
+              body: msg.type === 'text' ? msg.text : 'Fichier multimédia'
+            });
+          }
+        }
+
+        function createGroup() {
+          const name = prompt("Nom du groupe :");
+          if(name) {
+            alert("Groupe " + name + " créé !");
+          }
+        }
+      </script>
+
+    </body>
+    </html>
+  `);
 });
 
-app.listen(PORT, () => {
-    console.log(`Serveur JOSKUL CLOUD avec visualisation actif sur http://localhost:${PORT}`);
+// Événements Socket.IO
+io.on('connection', (socket) => {
+  socket.on('user_online', (userId) => {
+    io.emit('user_status', { userId, status: 'online' });
+  });
+
+  socket.on('send_message', (data) => {
+    io.emit('receive_message', data);
+  });
 });
 
-
-// Route pour supprimer un fichier de Supabase
-app.post("/delete", async (req, res) => {
-  const fileName = req.body.fileName;
-  if (!fileName) return res.status(400).send("Erreur : Aucun nom de fichier.");
-
-  try {
-    const { data, error } = await supabase.storage
-      .from("José Kulondi")
-      .remove([fileName]);
-
-    if (error) {
-      console.error(error);
-      return res.status(500).send("Erreur suppression : " + error.message);
-    }
-
-    res.redirect("/dashboard?deleted=true");
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Erreur serveur lors de la suppression.");
-  }
-});
+server.listen(PORT, () => console.log(`Serveur Messagerie en ligne sur le port ${PORT}`));

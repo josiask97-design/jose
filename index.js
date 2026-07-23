@@ -177,3 +177,4 @@ io.on('connection', (socket) => {
 });
 
 server.listen(PORT, () => console.log(`Serveur prêt sur le port ${PORT}`));
+// reset cache

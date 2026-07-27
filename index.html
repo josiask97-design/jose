@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jose Messenger</title>
+  <link rel="icon" type="image/png" href="logo.png">
+  <link rel="manifest" href="manifest.json">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: #f8fafc; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+
+    /* Cartes Connexion / Inscription */
+    .card { background: #ffffff; padding: 30px 24px; border-radius: 20px; width: 90%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); text-align: center; }
+    .logo { width: 80px; height: 80px; object-fit: contain; margin-bottom: 20px; }
+    h2 { color: #1e293b; font-size: 24px; margin-bottom: 20px; }
+    .phone-input-group { display: flex; gap: 10px; margin-bottom: 16px; }
+    select, input { width: 100%; padding: 14px; border: 1.5px solid #cbd5e1; border-radius: 12px; font-size: 15px; outline: none; margin-bottom: 12px; }
+    .forgot-password-container { text-align: right; margin-bottom: 20px; }
+    .forgot-password-container a { color: #3b82f6; text-decoration: none; font-size: 14px; }
+    .btn-primary { width: 100%; padding: 14px; background: #3b82f6; color: white; border: none; border-radius: 12px; font-weight: 600; cursor: pointer; }
+    .btn-secondary { width: 100%; padding: 14px; background: transparent; color: #3b82f6; border: 1.5px solid #3b82f6; border-radius: 12px; font-weight: 600; cursor: pointer; }
+    .divider { margin: 20px 0; border: 0; height: 1px; background: #e2e8f0; }
+    .hidden { display: none !important; }
+
+    /* Interface Principale du Messenger */
+    #mainAppScreen { width: 100vw; height: 100vh; display: flex; flex-direction: column; background: #ffffff; }
+    .app-header { background: #3b82f6; color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; }
+    .app-body { flex: 1; display: flex; overflow: hidden; }
+    .chat-list { width: 100%; background: #ffffff; overflow-y: auto; }
+    .chat-item { display: flex; align-items: center; padding: 15px; border-bottom: 1px solid #f1f5f9; cursor: pointer; }
+    .chat-item:hover { background: #f8fafc; }
+    .avatar { width: 45px; height: 45px; border-radius: 50%; background: #3b82f6; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-right: 12px; }
+    .avatar-ia { background: linear-gradient(135deg, #8b5cf6, #3b82f6); }
+    .chat-info h4 { font-size: 16px; color: #1e293b; }
+    .chat-info p { font-size: 13px; color: #64748b; }
+  </style>
+</head>
+<body>
+
+  <!-- ÉCRAN CONNEXION -->
+  <div id="loginScreen" class="card">
+    <img src="logo.png" alt="Jose Messenger" class="logo">
+    <h2>Connexion</h2>
+    <form id="loginForm">
+      <div class="phone-input-group">
+        <select><option value="+243">🇨🇩 +243</option></select>
+        <input type="tel" id="loginPhone" placeholder="Numéro de téléphone" required>
+      </div>
+      <input type="password" placeholder="Code secret (6 chiffres)" maxlength="6" required>
+      <div class="forgot-password-container">
+        <a href="#" id="toForgotBtn">Mot de passe oublié ?</a>
+      </div>
+      <button type="submit" class="btn-primary">Se connecter</button>
+    </form>
+    <hr class="divider">
+    <button type="button" id="toRegisterBtn" class="btn-secondary">Créer un compte</button>
+  </div>
+
+  <!-- ÉCRAN CRÉATION DE COMPTE -->
+  <div id="registerScreen" class="card hidden">
+    <img src="logo.png" alt="Jose Messenger" class="logo">
+    <h2>Créer un compte</h2>
+    <form id="registerForm">
+      <input type="text" placeholder="Nom complet" required>
+      <input type="tel" placeholder="Numéro de téléphone" required>
+      <input type="password" placeholder="Code secret" maxlength="6" required>
+      <button type="submit" class="btn-primary">S'inscrire</button>
+    </form>
+    <hr class="divider">
+    <button type="button" id="backToLoginFromReg" class="btn-secondary">Retour à la connexion</button>
+  </div>
+
+  <!-- ÉCRAN MOT DE PASSE OUBLIÉ -->
+  <div id="forgotScreen" class="card hidden">
+    <img src="logo.png" alt="Jose Messenger" class="logo">
+    <h2>Réinitialisation</h2>
+    <form id="forgotForm">
+      <input type="tel" placeholder="Numéro de téléphone" required>
+      <button type="submit" class="btn-primary">Envoyer le code</button>
+    </form>
+    <hr class="divider">
+    <button type="button" id="backToLoginFromForgot" class="btn-secondary">Retour à la connexion</button>
+  </div>
+
+  <!-- ÉCRAN PRINCIPAL MESSENGER (DISCUSSIONS, JOSEIA & PARAMÈTRES) -->
+  <div id="mainAppScreen" class="hidden">
+    <div class="app-header">
+      <h3>Jose Messenger</h3>
+      <div>
+        <button id="settingsBtn" style="background:none; border:none; color:white; font-size:18px; margin-right:10px;">⚙️</button>
+        <button id="logoutBtn" style="background:none; border:none; color:white; font-size:14px;">Déconnexion</button>
+      </div>
+    </div>
+
+    <div class="app-body">
+      <div class="chat-list">
+        <!-- Conversation JoseIA -->
+        <div class="chat-item" onclick="alert('Ouverture de la discussion avec JoseIA...')">
+          <div class="avatar avatar-ia">🤖</div>
+          <div class="chat-info">
+            <h4>JoseIA</h4>
+            <p>Assistant virtuel intégré</p>
+          </div>
+        </div>
+
+        <!-- Liste des discussions -->
+        <div class="chat-item" onclick="alert('Ouverture de la discussion...')">
+          <div class="avatar">JM</div>
+          <div class="chat-info">
+            <h4>Support Jose Messenger</h4>
+            <p>Bienvenue sur votre messagerie !</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

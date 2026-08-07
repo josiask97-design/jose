@@ -6,90 +6,245 @@
   <title>Josenet</title>
   <script src="/socket.io/socket.io.js"></script>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #f0f2f5;
+    * {
+      box-sizing: border-box;
       margin: 0;
       padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    body {
+      background-color: #121212;
+      color: #ffffff;
       display: flex;
-      flex-direction: column;
+      justify-content: center;
+      align-items: center;
       height: 100vh;
     }
-    header {
+
+    /* Écran de Connexion */
+    #login-screen {
+      background: #1e1e1e;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+      width: 90%;
+      max-width: 400px;
+      text-align: center;
+      border: 1px solid #2e7d32;
+    }
+    #login-screen h2 {
+      color: #4caf50;
+      margin-bottom: 20px;
+    }
+    .input-group {
+      margin-bottom: 15px;
+      text-align: left;
+    }
+    .input-group label {
+      display: block;
+      font-size: 14px;
+      margin-bottom: 5px;
+      color: #aaa;
+    }
+    .input-group input {
+      width: 100%;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid #333;
+      background: #2a2a2a;
+      color: white;
+      font-size: 16px;
+      outline: none;
+    }
+    .input-group input:focus {
+      border-color: #4caf50;
+    }
+    .btn-login {
+      width: 100%;
+      padding: 12px;
       background-color: #2e7d32;
       color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 10px;
+      transition: background 0.3s;
+    }
+    .btn-login:hover {
+      background-color: #388e3c;
+    }
+
+    /* Écran du Chat */
+    #chat-screen {
+      display: none;
+      width: 100%;
+      height: 100vh;
+      flex-direction: column;
+      background-color: #121212;
+    }
+    header {
+      background-color: #1b5e20;
       padding: 15px;
       text-align: center;
       font-size: 20px;
       font-weight: bold;
+      color: white;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    #user-info {
+      font-size: 14px;
+      color: #a5d6a7;
     }
     #chat-container {
       flex: 1;
       padding: 15px;
       overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
     }
     .message {
-      background: white;
+      background: #1e1e1e;
       padding: 10px 15px;
       border-radius: 8px;
-      margin-bottom: 10px;
-      max-width: 80%;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+      max-width: 75%;
+      word-wrap: break-word;
+      border-left: 3px solid #4caf50;
+    }
+    .message.mine {
+      align-self: flex-end;
+      background: #2e7d32;
+      border-left: none;
+      border-right: 3px solid #81c784;
+    }
+    .message .sender {
+      font-size: 12px;
+      color: #a5d6a7;
+      margin-bottom: 3px;
+      font-weight: bold;
     }
     #form {
       display: flex;
-      padding: 10px;
-      background: white;
-      border-top: 1px solid #ccc;
+      padding: 12px;
+      background: #1e1e1e;
+      border-top: 1px solid #2a2a2a;
     }
     #input {
       flex: 1;
-      padding: 10px;
-      border: 1px solid #ccc;
+      padding: 12px;
+      border: 1px solid #333;
+      background: #2a2a2a;
+      color: white;
       border-radius: 20px;
       outline: none;
     }
-    button {
+    #form button {
       background-color: #2e7d32;
       color: white;
       border: none;
-      padding: 10px 18px;
-      margin-left: 8px;
+      padding: 10px 20px;
+      margin-left: 10px;
       border-radius: 20px;
       cursor: pointer;
+      font-weight: bold;
     }
   </style>
 </head>
 <body>
-  <header>Josenet</header>
 
-  <div id="chat-container">
-    <div class="message">Bienvenue sur Josenet !</div>
+  <!-- ÉCRAN DE CONNEXION -->
+  <div id="login-screen">
+    <h2>Bienvenue sur Josenet</h2>
+    <form id="login-form">
+      <div class="input-group">
+        <label for="username">Nom d'utilisateur</label>
+        <input type="text" id="username" placeholder="Ex: José" required>
+      </div>
+      <div class="input-group">
+        <label for="phone">Numéro de téléphone</label>
+        <input type="tel" id="phone" placeholder="Ex: +243..." required>
+      </div>
+      <button type="submit" class="btn-login">Rejoindre le Chat</button>
+    </form>
   </div>
 
-  <form id="form">
-    <input id="input" autocomplete="off" placeholder="Écrivez un message..." />
-    <button type="submit">Envoyer</button>
-  </form>
+  <!-- ÉCRAN DU CHAT -->
+  <div id="chat-screen">
+    <header>
+      <span>Josenet</span>
+      <span id="user-info"></span>
+    </header>
+
+    <div id="chat-container"></div>
+
+    <form id="form">
+      <input id="input" autocomplete="off" placeholder="Écrivez un message..." />
+      <button type="submit">Envoyer</button>
+    </form>
+  </div>
 
   <script>
     const socket = io();
+
+    const loginScreen = document.getElementById('login-screen');
+    const chatScreen = document.getElementById('chat-screen');
+    const loginForm = document.getElementById('login-form');
+    const userInfo = document.getElementById('user-info');
+
     const form = document.getElementById('form');
     const input = document.getElementById('input');
     const chatContainer = document.getElementById('chat-container');
 
+    let currentUser = { name: '', phone: '' };
+
+    // Connexion / Inscription
+    loginForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const name = document.getElementById('username').value.trim();
+      const phone = document.getElementById('phone').value.trim();
+
+      if (name && phone) {
+        currentUser = { name, phone };
+        
+        // Alerte le serveur qu'un utilisateur s'est connecté
+        socket.emit('user_login', currentUser);
+
+        // Affichage de l'interface de chat
+        loginScreen.style.display = 'none';
+        chatScreen.style.display = 'flex';
+        userInfo.textContent = `Connecté : ${name}`;
+      }
+    });
+
+    // Envoi de message
     form.addEventListener('submit', (e) => {
       e.preventDefault();
-      if (input.value) {
-        socket.emit('send_message', { sender: 'Moi', message: input.value });
+      if (input.value.trim()) {
+        socket.emit('send_message', { 
+          sender: currentUser.name, 
+          message: input.value.trim() 
+        });
         input.value = '';
       }
     });
 
+    // Réception des messages
     socket.on('receive_message', (data) => {
       const msgDiv = document.createElement('div');
       msgDiv.classList.add('message');
-      msgDiv.textContent = `${data.sender} : ${data.message}`;
+      
+      const isMine = data.sender === currentUser.name;
+      if (isMine) msgDiv.classList.add('mine');
+
+      msgDiv.innerHTML = `
+        <div class="sender">${isMine ? 'Moi' : data.sender}</div>
+        <div>${data.message}</div>
+      `;
+
       chatContainer.appendChild(msgDiv);
       chatContainer.scrollTop = chatContainer.scrollHeight;
     });
